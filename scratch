@@ -1,0 +1,119 @@
+// See https://aka.ms/new-console-template for more information
+
+using System.Linq;
+using System.Text.RegularExpressions;
+
+Part1();
+Part2();
+
+static void Part1()
+{
+    var input = File.ReadAllText("Input.txt").Split($"{Environment.NewLine}{Environment.NewLine}");
+    var monkeys = input.Select(s => new Monkey(s.Split(Environment.NewLine))).ToList();
+    var itemsInspected = monkeys.Select(i => new List<Int64>()).ToList();
+
+    for (int round=0; round<20; round++)
+    {
+        foreach (var monkey in monkeys)
+        {
+            itemsInspected[monkeys.IndexOf(monkey)].Add(monkey.Items.Count());
+            foreach (var item in monkey.Items)
+            {
+                var newWorryLevel = ComputerWorryLevel(item, monkey.Operation);
+                newWorryLevel /= 3;
+
+                if (newWorryLevel % monkey.TestDivisor == 0)
+                    monkeys[monkey.TrueMonkey].Items.Add(newWorryLevel);
+                else
+                    monkeys[monkey.FalseMonkey].Items.Add(newWorryLevel);
+            }
+            monkey.Items.Clear();
+        }
+    }
+
+    //itemsInspected.ForEach(i => Console.WriteLine(i.Sum()));
+
+    var sortedItems = itemsInspected.Select(i => i.Sum()).OrderByDescending(i => i).ToList();
+
+    Console.WriteLine($"Part 1 -> {sortedItems[0] * sortedItems[1]}");
+}
+
+static void Part2()
+{
+    var input = File.ReadAllText("Input.txt").Split($"{Environment.NewLine}{Environment.NewLine}");
+    var monkeys = input.Select(s => new Monkey(s.Split(Environment.NewLine))).ToList();
+    var itemsInspected = monkeys.Select(i => new List<Int128>()).ToList();
+
+    for (int round = 0; round < 100; round++)
+    {
+        foreach (var monkey in monkeys)
+        {
+            itemsInspected[monkeys.IndexOf(monkey)].Add(monkey.Items.Count());
+            foreach (var item in monkey.Items)
+            {
+                var newWorryLevel = ComputerWorryLevel(item, monkey.Operation);
+                if (newWorryLevel % monkey.TestDivisor == 0)
+                    monkeys[monkey.TrueMonkey].Items.Add(newWorryLevel);
+                else
+                    monkeys[monkey.FalseMonkey].Items.Add(newWorryLevel);
+            }
+            monkey.Items.Clear();
+        }
+    }
+
+
+    foreach (var i in itemsInspected)
+    {
+        Int128 total = 0;
+        foreach (var it in i)
+        {
+            checked
+            {
+                total += it;
+            }
+        }
+        Console.WriteLine(total);
+    }
+
+    //    itemsInspected.ForEach(i => Console.WriteLine(i.Sum()));
+    // var sortedItems = itemsInspected.Select(i => i.Sum()).OrderByDescending(i => i).ToList();
+    // Console.WriteLine($"Part 2 -> {sortedItems[0] * sortedItems[1]}");
+}
+
+static Int128 ComputerWorryLevel(Int128 item, List<string> operation)
+{
+    checked
+    {
+        var op1 = operation[0] == "old" ? item : Int128.Parse(operation[0]);
+        var op2 = operation[2] == "old" ? item : Int128.Parse(operation[2]);
+
+        if (operation[1] == "*")
+            return op1 * op2;
+        else if (operation[1] == "+")
+            return op1 + op2;
+        else
+            throw new Exception();
+    }
+}
+
+class Monkey
+{
+    public List<Int128> Items = new List<Int128>();
+    public List<string> Operation;
+    public int TestDivisor;
+    public int TrueMonkey;
+    public int FalseMonkey;
+
+    public Monkey(IList<string> input)
+    {
+        Items = input[1].Split(":").Last().Split(",", StringSplitOptions.TrimEntries).Select(i => Int128.Parse(i)).ToList();
+        Operation = input[2].Split("=").Last().Trim().Split(" ").ToList();
+        TestDivisor = int.Parse(input[3].Split(" ").Last());
+
+        var firstMonkey = int.Parse(input[4].Split(" ").Last());
+        var secondMonkey = int.Parse(input[5].Split(" ").Last());
+
+        TrueMonkey = input[4].Contains("true") ? firstMonkey : secondMonkey;
+        FalseMonkey = input[4].Contains("false") ? firstMonkey : secondMonkey;
+    }
+}
